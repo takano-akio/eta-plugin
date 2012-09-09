@@ -6,7 +6,6 @@ module Eta.Plugin(plugin, EtaAnnotation(..)) where
 import Control.Applicative
 import Control.Monad
 import Data.Data
-import Data.Typeable
 import GhcPlugins
 
 plugin :: Plugin
@@ -42,7 +41,7 @@ etaBind1 _ _ e = return e
 
 etaBindLam :: EtaEnv -> Type -> CoreExpr -> CoreM CoreExpr
 etaBindLam env funTy body
-    | Just (argTy, bodyTy) <- splitFunTy_maybe funTy
+    | Just (_, bodyTy) <- splitFunTy_maybe funTy
     = case getArity env bodyTy of
         Just arity -> etaWithArity env arity bodyTy body
         Nothing -> case body of
