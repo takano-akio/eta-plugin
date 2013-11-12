@@ -1,12 +1,19 @@
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 module Eta.Plugin(plugin, EtaAnnotation(..)) where
 
 import Control.Applicative
 import Control.Monad
 import Data.Data
 import GhcPlugins
+
+#if __GLASGOW_HASKELL__ >= 706
+#define SHOW_S_DOC(dynFlags) showSDoc dynFlags
+#else
+#define SHOW_S_DOC(dynFlags) const showSDoc dynFlags
+#endif
 
 plugin :: Plugin
 plugin = defaultPlugin
@@ -51,15 +58,16 @@ etaBindLam env funTy body
 
 etaWithArity :: EtaEnv -> Int -> Type -> CoreExpr -> CoreM CoreExpr
 etaWithArity _ arity bodyTy body = do
+    dynFlags <- getDynFlags
     liftIO $ putStrLn $ "arity=" ++ show arity
-    liftIO $ putStrLn $ showSDoc $ ppr body
+    liftIO $ putStrLn $ SHOW_S_DOC(dynFlags) $ ppr body
     case unFunction arity bodyTy of
         Just (argsTy, co) -> do
-            liftIO $ putStrLn $ showSDoc $ ppr argsTy
-            liftIO $ putStrLn $ showSDoc $ ppr co
+            liftIO $ putStrLn $ SHOW_S_DOC(dynFlags) $ ppr argsTy
+            liftIO $ putStrLn $ SHOW_S_DOC(dynFlags) $ ppr co
             body' <- flip Cast (mkSymCo co) <$>
                 etaFun argsTy (Cast body co)
-            liftIO $ putStrLn $ showSDoc $ ppr body'
+            liftIO $ putStrLn $ SHOW_S_DOC(dynFlags) $ ppr body'
             return body'
         Nothing -> do
             liftIO $ putStrLn "Eta: not enough arity"
